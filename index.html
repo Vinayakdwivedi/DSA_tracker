@@ -1,0 +1,1225 @@
+<!-- <link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#6c63ff">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+in head -->
+<!-- 
+<script>
+  if ("serviceWorker" in navigator) {
+    navigator.serviceWorker.register("./sw.js");
+  }
+</script> -->
+<!-- before body after head -->
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#6c63ff">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DSA Streak Tracker</title>
+<meta name="description" content="Track your DSA problem-solving streak and projects">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Inter:wght@300;400;500;600&display=swap');
+
+  :root {
+    --bg: #0a0a0f;
+    --surface: #13131a;
+    --surface2: #1a1a24;
+    --border: #2a2a3a;
+    --accent: #7c6ffd;
+    --accent2: #e05fff;
+    --green: #3ddc84;
+    --orange: #ff8c42;
+    --red: #ff4d6d;
+    --yellow: #ffd166;
+    --text: #f0f0ff;
+    --text2: #8888aa;
+    --text3: #55556a;
+    --radius: 12px;
+    --mono: 'JetBrains Mono', monospace;
+    --sans: 'Inter', sans-serif;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: var(--sans);
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* NAV */
+  nav {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 0 20px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    height: 56px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  .nav-logo {
+    font-family: var(--mono);
+    font-weight: 700;
+    font-size: 16px;
+    color: var(--accent);
+    flex: 1;
+  }
+  .nav-logo span { color: var(--accent2); }
+  .nav-btn {
+    background: none;
+    border: none;
+    color: var(--text2);
+    font-family: var(--sans);
+    font-size: 13px;
+    cursor: pointer;
+    padding: 6px 12px;
+    border-radius: 8px;
+    transition: all 0.15s;
+  }
+  .nav-btn:hover, .nav-btn.active {
+    background: var(--surface2);
+    color: var(--text);
+  }
+  .nav-btn.active { color: var(--accent); }
+
+  /* PAGES */
+  .page { display: none; padding: 24px 20px; max-width: 720px; margin: 0 auto; }
+  .page.active { display: block; }
+
+  /* STREAK HERO */
+  .streak-hero {
+    background: linear-gradient(135deg, var(--surface) 0%, #1a0d2e 100%);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 28px 24px;
+    text-align: center;
+    margin-bottom: 20px;
+    position: relative;
+    overflow: hidden;
+  }
+  .streak-hero::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(ellipse at 50% 0%, rgba(124,111,253,0.12) 0%, transparent 70%);
+    pointer-events: none;
+  }
+  .streak-number {
+    font-family: var(--mono);
+    font-size: 72px;
+    font-weight: 700;
+    line-height: 1;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .streak-label {
+    color: var(--text2);
+    font-size: 13px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    margin-top: 6px;
+  }
+  .streak-fire { font-size: 36px; margin-bottom: 8px; }
+  .streak-message {
+    margin-top: 12px;
+    font-size: 15px;
+    color: var(--text);
+    font-weight: 500;
+  }
+
+  /* TODAY CARD */
+  .today-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 20px;
+    margin-bottom: 20px;
+  }
+  .today-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 16px;
+  }
+  .today-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text2);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+  .today-date {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--text3);
+  }
+  .log-form { display: flex; flex-direction: column; gap: 12px; }
+  .input-row { display: flex; gap: 10px; }
+  .input-group { flex: 1; display: flex; flex-direction: column; gap: 6px; }
+  .input-label { font-size: 12px; color: var(--text2); }
+  input[type="number"], input[type="text"], select, textarea {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text);
+    font-family: var(--sans);
+    font-size: 14px;
+    padding: 10px 12px;
+    width: 100%;
+    outline: none;
+    transition: border 0.15s;
+  }
+  input:focus, select:focus, textarea:focus { border-color: var(--accent); }
+  select option { background: var(--surface2); }
+  textarea { resize: vertical; min-height: 70px; }
+
+  /* BUTTONS */
+  .btn {
+    border: none;
+    border-radius: 8px;
+    font-family: var(--sans);
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    padding: 10px 20px;
+    transition: all 0.15s;
+  }
+  .btn-primary {
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    color: white;
+  }
+  .btn-primary:hover { opacity: 0.9; transform: translateY(-1px); }
+  .btn-primary:active { transform: translateY(0); }
+  .btn-ghost {
+    background: var(--surface2);
+    color: var(--text2);
+    border: 1px solid var(--border);
+  }
+  .btn-ghost:hover { color: var(--text); border-color: var(--accent); }
+  .btn-danger {
+    background: rgba(255,77,109,0.12);
+    color: var(--red);
+    border: 1px solid rgba(255,77,109,0.2);
+  }
+  .btn-danger:hover { background: rgba(255,77,109,0.2); }
+  .btn-sm { padding: 6px 12px; font-size: 12px; }
+  .btn-full { width: 100%; }
+
+  /* STATS ROW */
+  .stats-row {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+  .stat-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px;
+    text-align: center;
+  }
+  .stat-val {
+    font-family: var(--mono);
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--text);
+  }
+  .stat-val.green { color: var(--green); }
+  .stat-val.orange { color: var(--orange); }
+  .stat-val.purple { color: var(--accent); }
+  .stat-label { font-size: 11px; color: var(--text3); margin-top: 4px; text-transform: uppercase; letter-spacing: 0.06em; }
+
+  /* BADGES */
+  .section-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text2);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: 12px;
+  }
+  .badges-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+    margin-bottom: 20px;
+  }
+  .badge {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 12px 8px;
+    text-align: center;
+    transition: all 0.2s;
+    position: relative;
+  }
+  .badge.earned {
+    border-color: var(--accent);
+    background: linear-gradient(135deg, rgba(124,111,253,0.08), rgba(224,95,255,0.06));
+  }
+  .badge.locked { opacity: 0.35; filter: grayscale(1); }
+  .badge-icon { font-size: 26px; }
+  .badge-name { font-size: 10px; color: var(--text2); margin-top: 5px; line-height: 1.3; }
+  .badge.earned .badge-name { color: var(--accent); }
+  .badge-earned-glow {
+    position: absolute;
+    top: -1px; left: -1px; right: -1px; bottom: -1px;
+    border-radius: var(--radius);
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    z-index: -1;
+    opacity: 0.4;
+    filter: blur(4px);
+  }
+
+  /* HEATMAP */
+  .heatmap-wrap {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px;
+    margin-bottom: 20px;
+    overflow-x: auto;
+  }
+  .heatmap-grid {
+    display: flex;
+    gap: 3px;
+    flex-wrap: wrap;
+  }
+  .heatmap-cell {
+    width: 13px;
+    height: 13px;
+    border-radius: 2px;
+    background: var(--surface2);
+    cursor: pointer;
+    transition: transform 0.1s;
+    position: relative;
+  }
+  .heatmap-cell:hover { transform: scale(1.3); z-index: 1; }
+  .heatmap-cell.d1 { background: rgba(124,111,253,0.25); }
+  .heatmap-cell.d2 { background: rgba(124,111,253,0.5); }
+  .heatmap-cell.d3 { background: rgba(124,111,253,0.75); }
+  .heatmap-cell.d4 { background: var(--accent); }
+  .heatmap-cell.today { outline: 2px solid var(--accent2); outline-offset: 1px; }
+
+  /* HISTORY */
+  .history-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 20px; }
+  .history-item {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 12px 14px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .history-date { font-family: var(--mono); font-size: 11px; color: var(--text3); min-width: 80px; }
+  .history-count {
+    font-family: var(--mono);
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--accent);
+    min-width: 30px;
+  }
+  .history-note { font-size: 13px; color: var(--text2); flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .difficulty-badge {
+    font-size: 10px;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 99px;
+    text-transform: uppercase;
+  }
+  .diff-easy { background: rgba(61,220,132,0.15); color: var(--green); }
+  .diff-medium { background: rgba(255,209,102,0.15); color: var(--yellow); }
+  .diff-hard { background: rgba(255,77,109,0.15); color: var(--red); }
+
+  /* NOTIFICATION BANNER */
+  .notif-banner {
+    background: linear-gradient(135deg, rgba(255,140,66,0.15), rgba(255,77,109,0.1));
+    border: 1px solid rgba(255,140,66,0.3);
+    border-radius: var(--radius);
+    padding: 14px 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+  .notif-icon { font-size: 20px; }
+  .notif-text { font-size: 14px; flex: 1; }
+  .notif-text strong { color: var(--orange); }
+
+  /* PROJECTS PAGE */
+  .projects-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 16px;
+  }
+  .project-cards { display: flex; flex-direction: column; gap: 14px; }
+  .project-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 18px;
+    transition: border-color 0.15s;
+  }
+  .project-card:hover { border-color: var(--accent); }
+  .project-top {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    margin-bottom: 10px;
+  }
+  .project-name {
+    font-weight: 600;
+    font-size: 15px;
+    color: var(--text);
+  }
+  .project-tag {
+    font-size: 10px;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 99px;
+    text-transform: uppercase;
+  }
+  .tag-active { background: rgba(61,220,132,0.15); color: var(--green); }
+  .tag-paused { background: rgba(255,140,66,0.15); color: var(--orange); }
+  .tag-done { background: rgba(124,111,253,0.15); color: var(--accent); }
+  .project-desc { font-size: 13px; color: var(--text2); margin-bottom: 12px; }
+  .progress-bar {
+    height: 5px;
+    background: var(--surface2);
+    border-radius: 99px;
+    overflow: hidden;
+    margin-bottom: 8px;
+  }
+  .progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent), var(--accent2));
+    border-radius: 99px;
+    transition: width 0.4s ease;
+  }
+  .project-meta {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 12px;
+    color: var(--text3);
+  }
+  .project-actions { display: flex; gap: 8px; margin-top: 14px; }
+
+  /* ADD PROJECT MODAL */
+  .modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.7);
+    z-index: 200;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s;
+  }
+  .modal-overlay.show { opacity: 1; pointer-events: all; }
+  .modal {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 24px;
+    width: 100%;
+    max-width: 460px;
+    transform: translateY(16px);
+    transition: transform 0.2s;
+  }
+  .modal-overlay.show .modal { transform: translateY(0); }
+  .modal-title {
+    font-size: 16px;
+    font-weight: 600;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .modal-close {
+    background: none;
+    border: none;
+    color: var(--text2);
+    font-size: 20px;
+    cursor: pointer;
+    line-height: 1;
+  }
+  .form-stack { display: flex; flex-direction: column; gap: 14px; }
+  .form-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 4px; }
+
+  /* TOAST */
+  .toast {
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%) translateY(80px);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 12px 20px;
+    font-size: 14px;
+    font-weight: 500;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+    z-index: 300;
+    transition: transform 0.25s ease;
+    white-space: nowrap;
+  }
+  .toast.show { transform: translateX(-50%) translateY(0); }
+  .toast.success { border-color: var(--green); color: var(--green); }
+  .toast.info { border-color: var(--accent); color: var(--accent); }
+  .toast.warning { border-color: var(--orange); color: var(--orange); }
+
+  /* SETTINGS */
+  .settings-section {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 20px;
+    margin-bottom: 16px;
+  }
+  .settings-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .settings-row:last-child { border-bottom: none; }
+  .settings-row-label { font-size: 14px; }
+  .settings-row-sub { font-size: 12px; color: var(--text3); margin-top: 2px; }
+  .toggle {
+    width: 44px; height: 24px;
+    background: var(--surface2);
+    border-radius: 99px;
+    position: relative;
+    cursor: pointer;
+    border: 1px solid var(--border);
+    transition: background 0.2s;
+  }
+  .toggle.on { background: var(--accent); border-color: var(--accent); }
+  .toggle::after {
+    content: '';
+    position: absolute;
+    width: 18px; height: 18px;
+    background: white;
+    border-radius: 50%;
+    top: 2px; left: 2px;
+    transition: left 0.2s;
+  }
+  .toggle.on::after { left: 22px; }
+
+  /* EMPTY STATE */
+  .empty-state {
+    text-align: center;
+    padding: 40px 20px;
+    color: var(--text3);
+  }
+  .empty-state-icon { font-size: 40px; margin-bottom: 12px; }
+  .empty-state-text { font-size: 14px; }
+
+  /* NOTIFICATION LOG */
+  .notif-log {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+    margin-bottom: 20px;
+  }
+  .notif-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border);
+    font-size: 13px;
+  }
+  .notif-item:last-child { border-bottom: none; }
+  .notif-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--accent);
+    flex-shrink: 0;
+  }
+  .notif-dot.orange { background: var(--orange); }
+  .notif-dot.green { background: var(--green); }
+
+  /* RESPONSIVE */
+  @media (max-width: 480px) {
+    .badges-grid { grid-template-columns: repeat(4, 1fr); }
+    .stats-row { grid-template-columns: repeat(3, 1fr); }
+    .streak-number { font-size: 60px; }
+  }
+</style>
+</head>
+<script>
+  if ("serviceWorker" in navigator) {
+    navigator.serviceWorker.register("./sw.js");
+  }
+</script>
+<body>
+
+<nav>
+  <div class="nav-logo">dsa<span>.</span>streak</div>
+  <button class="nav-btn active" onclick="showPage('home')">Home</button>
+  <button class="nav-btn" onclick="showPage('log')">Log</button>
+  <button class="nav-btn" onclick="showPage('projects')">Projects</button>
+  <button class="nav-btn" onclick="showPage('settings')">Settings</button>
+</nav>
+
+<!-- HOME PAGE -->
+<div class="page active" id="page-home">
+  <div id="notif-area"></div>
+
+  <div class="streak-hero">
+    <div class="streak-fire" id="streak-emoji">🔥</div>
+    <div class="streak-number" id="streak-num">0</div>
+    <div class="streak-label">Day Streak</div>
+    <div class="streak-message" id="streak-msg">Start your journey today!</div>
+  </div>
+
+  <div class="stats-row">
+    <div class="stat-card">
+      <div class="stat-val green" id="stat-total">0</div>
+      <div class="stat-label">Total Solved</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-val orange" id="stat-best">0</div>
+      <div class="stat-label">Best Streak</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-val purple" id="stat-today">0</div>
+      <div class="stat-label">Today</div>
+    </div>
+  </div>
+
+  <div class="section-title">Badges</div>
+  <div class="badges-grid" id="badges-grid"></div>
+
+  <div class="section-title">Last 84 Days</div>
+  <div class="heatmap-wrap">
+    <div class="heatmap-grid" id="heatmap"></div>
+  </div>
+
+  <div class="section-title">Recent Activity</div>
+  <div class="history-list" id="home-history"></div>
+</div>
+
+<!-- LOG PAGE -->
+<div class="page" id="page-log">
+  <div class="today-card">
+    <div class="today-header">
+      <div class="today-title">Log Today's Session</div>
+      <div class="today-date" id="log-date"></div>
+    </div>
+    <div class="log-form">
+      <div class="input-row">
+        <div class="input-group">
+          <div class="input-label">Problems Solved</div>
+          <input type="number" id="inp-count" min="1" max="99" placeholder="e.g. 3" />
+        </div>
+        <div class="input-group">
+          <div class="input-label">Difficulty</div>
+          <select id="inp-diff">
+            <option value="mixed">Mixed</option>
+            <option value="easy">Easy</option>
+            <option value="medium">Medium</option>
+            <option value="hard">Hard</option>
+          </select>
+        </div>
+      </div>
+      <div class="input-group">
+        <div class="input-label">Topics (comma separated)</div>
+        <input type="text" id="inp-topic" placeholder="e.g. Arrays, DP, Trees" />
+      </div>
+      <div class="input-group">
+        <div class="input-label">Notes</div>
+        <textarea id="inp-note" placeholder="What did you learn or struggle with?"></textarea>
+      </div>
+      <button class="btn btn-primary btn-full" onclick="logToday()">✓ Mark Today Done</button>
+    </div>
+  </div>
+
+  <div class="section-title">Full History</div>
+  <div class="history-list" id="full-history"></div>
+</div>
+
+<!-- PROJECTS PAGE -->
+<div class="page" id="page-projects">
+  <div class="projects-header">
+    <div class="section-title" style="margin:0">Projects</div>
+    <button class="btn btn-primary btn-sm" onclick="openProjectModal()">+ Add</button>
+  </div>
+  <div class="project-cards" id="project-cards"></div>
+</div>
+
+<!-- SETTINGS PAGE -->
+<div class="page" id="page-settings">
+  <div class="settings-section">
+    <div class="section-title">Notifications</div>
+    <div class="settings-row">
+      <div>
+        <div class="settings-row-label">Daily Reminder</div>
+        <div class="settings-row-sub">Get reminded if you haven't logged yet</div>
+      </div>
+      <div class="toggle on" id="toggle-daily" onclick="toggleSetting('daily')"></div>
+    </div>
+    <div class="settings-row">
+      <div>
+        <div class="settings-row-label">Streak Alert</div>
+        <div class="settings-row-sub">Warn when streak is at risk</div>
+      </div>
+      <div class="toggle on" id="toggle-streak" onclick="toggleSetting('streak')"></div>
+    </div>
+    <div class="settings-row">
+      <div>
+        <div class="settings-row-label">Badge Unlock</div>
+        <div class="settings-row-sub">Notify on new badge earned</div>
+      </div>
+      <div class="toggle on" id="toggle-badge" onclick="toggleSetting('badge')"></div>
+    </div>
+  </div>
+
+  <div class="settings-section">
+    <div class="section-title">Goal</div>
+    <div class="settings-row">
+      <div>
+        <div class="settings-row-label">Daily Target (problems)</div>
+      </div>
+      <input type="number" id="goal-input" min="1" max="20" value="3"
+        style="width:60px; text-align:center; padding:6px 8px; font-size:14px;"
+        onchange="saveGoal(this.value)" />
+    </div>
+  </div>
+
+  <div class="settings-section">
+    <div class="section-title">Notification Log</div>
+    <div class="notif-log" id="notif-log"></div>
+  </div>
+
+  <div class="settings-section">
+    <div class="section-title">Data</div>
+    <div style="display:flex; gap:10px;">
+      <button class="btn btn-ghost btn-sm" onclick="exportData()">⬇ Export JSON</button>
+      <button class="btn btn-danger btn-sm" onclick="resetData()">⚠ Reset All</button>
+    </div>
+  </div>
+</div>
+
+<!-- ADD PROJECT MODAL -->
+<div class="modal-overlay" id="project-modal">
+  <div class="modal">
+    <div class="modal-title">
+      <span id="modal-title-text">New Project</span>
+      <button class="modal-close" onclick="closeProjectModal()">×</button>
+    </div>
+    <div class="form-stack">
+      <div class="input-group">
+        <div class="input-label">Project Name</div>
+        <input type="text" id="proj-name" placeholder="e.g. Blind 75, DP Sheet" />
+      </div>
+      <div class="input-group">
+        <div class="input-label">Description</div>
+        <textarea id="proj-desc" placeholder="What are you trying to complete?" style="min-height:60px;"></textarea>
+      </div>
+      <div class="input-row">
+        <div class="input-group">
+          <div class="input-label">Total Questions</div>
+          <input type="number" id="proj-total" min="1" placeholder="e.g. 75" />
+        </div>
+        <div class="input-group">
+          <div class="input-label">Done So Far</div>
+          <input type="number" id="proj-done" min="0" placeholder="0" />
+        </div>
+      </div>
+      <div class="input-group">
+        <div class="input-label">Status</div>
+        <select id="proj-status">
+          <option value="active">Active</option>
+          <option value="paused">Paused</option>
+          <option value="done">Completed</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-actions" style="margin-top:16px;">
+      <button class="btn btn-ghost" onclick="closeProjectModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="saveProject()">Save Project</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ─── STATE ───────────────────────────────────────────
+let state = loadState();
+
+function loadState() {
+  const def = {
+    log: {},           // { "2025-06-18": { count, diff, topic, note } }
+    projects: [],
+    settings: { daily: true, streak: true, badge: true, goal: 3 },
+    notifications: [],
+    lastCheck: null
+  };
+  try {
+    const s = JSON.parse(localStorage.getItem('dsa_streak') || '{}');
+    return Object.assign(def, s);
+  } catch { return def; }
+}
+
+function save() {
+  localStorage.setItem('dsa_streak', JSON.stringify(state));
+}
+
+function today() {
+  return new Date().toISOString().slice(0, 10);
+}
+
+function dateStr(d) {
+  return new Date(d).toLocaleDateString('en-IN', { day:'numeric', month:'short' });
+}
+
+// ─── STREAK CALC ─────────────────────────────────────
+function calcStreak() {
+  const dates = Object.keys(state.log).sort().reverse();
+  if (!dates.length) return 0;
+  const t = today();
+  let streak = 0;
+  let cur = new Date(t);
+  for (let i = 0; i < 365; i++) {
+    const d = cur.toISOString().slice(0, 10);
+    if (state.log[d]) { streak++; }
+    else if (i === 0) { /* skip today if not yet logged */ }
+    else break;
+    cur.setDate(cur.getDate() - 1);
+  }
+  // Also count today if logged
+  if (state.log[t]) {
+    // already counted above if we started from today
+  }
+  return streak;
+}
+
+function calcStreakPrecise() {
+  const t = today();
+  const dates = Object.keys(state.log).sort().reverse();
+  if (!dates.length) return 0;
+  let streak = 0;
+  let cur = new Date(t);
+  for (let i = 0; i < 365; i++) {
+    const d = cur.toISOString().slice(0, 10);
+    if (state.log[d]) {
+      streak++;
+      cur.setDate(cur.getDate() - 1);
+    } else if (i === 0) {
+      cur.setDate(cur.getDate() - 1); // today not logged yet, check yesterday
+    } else {
+      break;
+    }
+  }
+  return streak;
+}
+
+function bestStreak() {
+  const dates = Object.keys(state.log).sort();
+  if (!dates.length) return 0;
+  let best = 1, cur = 1;
+  for (let i = 1; i < dates.length; i++) {
+    const d1 = new Date(dates[i-1]);
+    const d2 = new Date(dates[i]);
+    const diff = (d2 - d1) / 86400000;
+    if (diff === 1) { cur++; best = Math.max(best, cur); }
+    else cur = 1;
+  }
+  return best;
+}
+
+function totalSolved() {
+  return Object.values(state.log).reduce((s, v) => s + (v.count || 0), 0);
+}
+
+// ─── BADGES ──────────────────────────────────────────
+const BADGES = [
+  { id:'first', icon:'⚡', name:'First Blood', cond: s => totalSolved() >= 1 },
+  { id:'w1',    icon:'🔥', name:'7 Day Streak', cond: s => s >= 7 },
+  { id:'w2',    icon:'💎', name:'14 Day Streak', cond: s => s >= 14 },
+  { id:'m1',    icon:'🚀', name:'30 Day Streak', cond: s => s >= 30 },
+  { id:'m2',    icon:'🌟', name:'60 Day Streak', cond: s => s >= 60 },
+  { id:'m3',    icon:'👑', name:'100 Day Streak', cond: s => s >= 100 },
+  { id:'p50',   icon:'🎯', name:'50 Problems', cond: () => totalSolved() >= 50 },
+  { id:'p100',  icon:'💯', name:'100 Problems', cond: () => totalSolved() >= 100 },
+];
+
+function checkBadges(streak) {
+  const newBadges = [];
+  BADGES.forEach(b => {
+    const earned = b.cond(streak);
+    const wasEarned = state.earnedBadges && state.earnedBadges.includes(b.id);
+    if (earned && !wasEarned) newBadges.push(b);
+  });
+  if (newBadges.length) {
+    if (!state.earnedBadges) state.earnedBadges = [];
+    newBadges.forEach(b => state.earnedBadges.push(b.id));
+    newBadges.forEach(b => {
+      addNotif(`🏅 Badge Unlocked: ${b.name} ${b.icon}`, 'badge');
+      if (state.settings.badge) showToast(`Badge unlocked: ${b.name} ${b.icon}`, 'success');
+    });
+    save();
+  }
+}
+
+// ─── NOTIFICATIONS ───────────────────────────────────
+function addNotif(text, type = 'info') {
+  state.notifications.unshift({ text, type, time: Date.now() });
+  if (state.notifications.length > 30) state.notifications.pop();
+  save();
+}
+
+function checkDailyNotifs() {
+  const t = today();
+  if (state.lastCheck === t) return;
+  state.lastCheck = t;
+  const streak = calcStreakPrecise();
+  if (streak >= 3 && !state.log[t] && state.settings.streak) {
+    addNotif(`🔥 Don't break your ${streak}-day streak! Log today's problems.`, 'streak');
+  }
+  if (!state.log[t] && state.settings.daily) {
+    addNotif(`📅 Remember to log your DSA problems today!`, 'daily');
+  }
+  save();
+}
+
+// ─── RENDER HOME ─────────────────────────────────────
+function renderHome() {
+  const streak = calcStreakPrecise();
+  const best = Math.max(bestStreak(), streak);
+  const tot = totalSolved();
+  const todayLog = state.log[today()];
+
+  // Streak hero
+  document.getElementById('streak-num').textContent = streak;
+  document.getElementById('stat-total').textContent = tot;
+  document.getElementById('stat-best').textContent = best;
+  document.getElementById('stat-today').textContent = todayLog ? todayLog.count : 0;
+
+  const msgs = [
+    [0, '💻', 'Start your journey today!'],
+    [1, '🔥', 'You started! Keep going.'],
+    [3, '⚡', 'Building momentum!'],
+    [7, '🚀', 'One week down. Unstoppable.'],
+    [14, '💎', 'Two weeks strong!'],
+    [30, '🌟', 'A month of consistency!'],
+    [60, '👑', 'Two months — legendary.'],
+    [100, '🏆', 'Hundred days. Absolute beast.'],
+  ];
+  let em = '💻', msg = 'Start your journey today!';
+  for (const [d, e, m] of msgs) { if (streak >= d) { em = e; msg = m; } }
+  document.getElementById('streak-emoji').textContent = em;
+  document.getElementById('streak-msg').textContent = msg;
+
+  // Badges
+  const badgesGrid = document.getElementById('badges-grid');
+  badgesGrid.innerHTML = BADGES.map(b => {
+    const earned = state.earnedBadges && state.earnedBadges.includes(b.id);
+    return `<div class="badge ${earned ? 'earned' : 'locked'}" title="${b.name}">
+      ${earned ? '<div class="badge-earned-glow"></div>' : ''}
+      <div class="badge-icon">${b.icon}</div>
+      <div class="badge-name">${b.name}</div>
+    </div>`;
+  }).join('');
+
+  // Heatmap
+  const hm = document.getElementById('heatmap');
+  hm.innerHTML = '';
+  const t = today();
+  for (let i = 83; i >= 0; i--) {
+    const d = new Date();
+    d.setDate(d.getDate() - i);
+    const ds = d.toISOString().slice(0, 10);
+    const entry = state.log[ds];
+    let level = 0;
+    if (entry) {
+      const c = entry.count;
+      if (c >= 10) level = 4;
+      else if (c >= 6) level = 3;
+      else if (c >= 3) level = 2;
+      else level = 1;
+    }
+    const isToday = ds === t;
+    hm.innerHTML += `<div class="heatmap-cell ${level ? 'd'+level : ''} ${isToday ? 'today' : ''}"
+      title="${ds}: ${entry ? entry.count + ' problems' : 'none'}"></div>`;
+  }
+
+  // Notification banner
+  const notifArea = document.getElementById('notif-area');
+  const streak2 = streak;
+  if (streak2 >= 3 && !state.log[t]) {
+    notifArea.innerHTML = `<div class="notif-banner">
+      <div class="notif-icon">⚠️</div>
+      <div class="notif-text"><strong>Streak at risk!</strong> You have a ${streak2}-day streak. Log today's problems to keep it alive.</div>
+    </div>`;
+  } else { notifArea.innerHTML = ''; }
+
+  // Recent history
+  const hist = document.getElementById('home-history');
+  const entries = Object.entries(state.log).sort((a,b) => b[0].localeCompare(a[0])).slice(0,5);
+  if (!entries.length) {
+    hist.innerHTML = `<div class="empty-state"><div class="empty-state-icon">📝</div><div class="empty-state-text">No activity yet. Start logging!</div></div>`;
+  } else {
+    hist.innerHTML = entries.map(([d, v]) => histItem(d, v)).join('');
+  }
+}
+
+function histItem(d, v) {
+  const diffClass = { easy:'diff-easy', medium:'diff-medium', hard:'diff-hard', mixed:'diff-medium' };
+  return `<div class="history-item">
+    <div class="history-date">${dateStr(d)}</div>
+    <div class="history-count">${v.count}</div>
+    <div class="history-note">${v.topic || v.note || '—'}</div>
+    <span class="difficulty-badge ${diffClass[v.diff] || 'diff-medium'}">${v.diff || 'mixed'}</span>
+  </div>`;
+}
+
+// ─── LOG PAGE ─────────────────────────────────────────
+function renderLog() {
+  document.getElementById('log-date').textContent = new Date().toLocaleDateString('en-IN', { weekday:'short', day:'numeric', month:'short' });
+  const t = today();
+  const todayLog = state.log[t];
+  if (todayLog) {
+    document.getElementById('inp-count').value = todayLog.count || '';
+    document.getElementById('inp-diff').value = todayLog.diff || 'mixed';
+    document.getElementById('inp-topic').value = todayLog.topic || '';
+    document.getElementById('inp-note').value = todayLog.note || '';
+  }
+
+  const fullHist = document.getElementById('full-history');
+  const entries = Object.entries(state.log).sort((a,b) => b[0].localeCompare(a[0]));
+  if (!entries.length) {
+    fullHist.innerHTML = `<div class="empty-state"><div class="empty-state-icon">🗂️</div><div class="empty-state-text">No entries yet.</div></div>`;
+  } else {
+    fullHist.innerHTML = entries.map(([d, v]) => histItem(d, v)).join('');
+  }
+}
+
+function logToday() {
+  const count = parseInt(document.getElementById('inp-count').value);
+  if (!count || count < 1) { showToast('Enter number of problems solved', 'warning'); return; }
+  const diff = document.getElementById('inp-diff').value;
+  const topic = document.getElementById('inp-topic').value;
+  const note = document.getElementById('inp-note').value;
+  const t = today();
+  const isNew = !state.log[t];
+  state.log[t] = { count, diff, topic, note };
+  save();
+  const streak = calcStreakPrecise();
+  checkBadges(streak);
+  showToast(isNew ? `✓ ${count} problems logged! Streak: ${streak} days` : `✓ Updated. ${count} problems.`, 'success');
+  if (isNew && streak > 1) addNotif(`🔥 Day ${streak} streak maintained! ${count} problems solved.`, 'streak');
+  renderHome();
+  renderLog();
+}
+
+// ─── PROJECTS ─────────────────────────────────────────
+let editingProjectId = null;
+
+function renderProjects() {
+  const cards = document.getElementById('project-cards');
+  if (!state.projects.length) {
+    cards.innerHTML = `<div class="empty-state"><div class="empty-state-icon">🗂️</div><div class="empty-state-text">No projects yet. Add your first one!</div></div>`;
+    return;
+  }
+  cards.innerHTML = state.projects.map((p, i) => {
+    const pct = p.total ? Math.min(100, Math.round((p.done / p.total) * 100)) : 0;
+    const statusCls = { active:'tag-active', paused:'tag-paused', done:'tag-done' };
+    return `<div class="project-card">
+      <div class="project-top">
+        <div class="project-name">${p.name}</div>
+        <span class="project-tag ${statusCls[p.status] || 'tag-active'}">${p.status}</span>
+      </div>
+      ${p.desc ? `<div class="project-desc">${p.desc}</div>` : ''}
+      <div class="progress-bar"><div class="progress-fill" style="width:${pct}%"></div></div>
+      <div class="project-meta">
+        <span>${p.done || 0} / ${p.total || '?'} problems</span>
+        <span>${pct}% complete</span>
+      </div>
+      <div class="project-actions">
+        <button class="btn btn-ghost btn-sm" onclick="incrementProject(${i})">+1 Done</button>
+        <button class="btn btn-ghost btn-sm" onclick="editProject(${i})">Edit</button>
+        <button class="btn btn-danger btn-sm" onclick="deleteProject(${i})">Delete</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function openProjectModal(id = null) {
+  editingProjectId = id;
+  document.getElementById('modal-title-text').textContent = id !== null ? 'Edit Project' : 'New Project';
+  if (id !== null) {
+    const p = state.projects[id];
+    document.getElementById('proj-name').value = p.name || '';
+    document.getElementById('proj-desc').value = p.desc || '';
+    document.getElementById('proj-total').value = p.total || '';
+    document.getElementById('proj-done').value = p.done || 0;
+    document.getElementById('proj-status').value = p.status || 'active';
+  } else {
+    document.getElementById('proj-name').value = '';
+    document.getElementById('proj-desc').value = '';
+    document.getElementById('proj-total').value = '';
+    document.getElementById('proj-done').value = '';
+    document.getElementById('proj-status').value = 'active';
+  }
+  document.getElementById('project-modal').classList.add('show');
+}
+
+function closeProjectModal() {
+  document.getElementById('project-modal').classList.remove('show');
+  editingProjectId = null;
+}
+
+function saveProject() {
+  const name = document.getElementById('proj-name').value.trim();
+  if (!name) { showToast('Project name is required', 'warning'); return; }
+  const p = {
+    name,
+    desc: document.getElementById('proj-desc').value.trim(),
+    total: parseInt(document.getElementById('proj-total').value) || 0,
+    done: parseInt(document.getElementById('proj-done').value) || 0,
+    status: document.getElementById('proj-status').value,
+  };
+  if (editingProjectId !== null) {
+    state.projects[editingProjectId] = p;
+    showToast('Project updated', 'info');
+  } else {
+    state.projects.push(p);
+    showToast('Project added!', 'success');
+  }
+  save();
+  renderProjects();
+  closeProjectModal();
+}
+
+function editProject(i) { openProjectModal(i); }
+
+function deleteProject(i) {
+  if (!confirm('Delete this project?')) return;
+  state.projects.splice(i, 1);
+  save();
+  renderProjects();
+  showToast('Project deleted', 'warning');
+}
+
+function incrementProject(i) {
+  state.projects[i].done = (state.projects[i].done || 0) + 1;
+  if (state.projects[i].total && state.projects[i].done >= state.projects[i].total) {
+    state.projects[i].status = 'done';
+    showToast(`🎉 Project "${state.projects[i].name}" completed!`, 'success');
+    addNotif(`🎉 Completed project: ${state.projects[i].name}`, 'badge');
+  } else {
+    showToast('+1 problem logged in project', 'info');
+  }
+  save();
+  renderProjects();
+}
+
+// ─── SETTINGS ────────────────────────────────────────
+function renderSettings() {
+  const s = state.settings;
+  ['daily', 'streak', 'badge'].forEach(k => {
+    const el = document.getElementById('toggle-' + k);
+    if (el) el.className = 'toggle' + (s[k] ? ' on' : '');
+  });
+  document.getElementById('goal-input').value = s.goal || 3;
+
+  const notifLog = document.getElementById('notif-log');
+  if (!state.notifications.length) {
+    notifLog.innerHTML = `<div class="notif-item"><div class="notif-dot"></div><div style="font-size:13px;color:var(--text3)">No notifications yet.</div></div>`;
+  } else {
+    notifLog.innerHTML = state.notifications.slice(0,10).map(n => {
+      const dotColor = n.type === 'badge' ? 'green' : n.type === 'streak' ? 'orange' : '';
+      const t = new Date(n.time).toLocaleTimeString('en-IN', { hour:'2-digit', minute:'2-digit' });
+      return `<div class="notif-item">
+        <div class="notif-dot ${dotColor}"></div>
+        <div style="flex:1;font-size:13px;">${n.text}</div>
+        <div style="font-size:11px;color:var(--text3)">${t}</div>
+      </div>`;
+    }).join('');
+  }
+}
+
+function toggleSetting(key) {
+  state.settings[key] = !state.settings[key];
+  save();
+  renderSettings();
+}
+
+function saveGoal(v) {
+  state.settings.goal = parseInt(v) || 3;
+  save();
+  showToast('Goal updated', 'info');
+}
+
+function exportData() {
+  const blob = new Blob([JSON.stringify(state, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = 'dsa-streak-backup.json';
+  a.click(); URL.revokeObjectURL(url);
+  showToast('Data exported!', 'success');
+}
+
+function resetData() {
+  if (!confirm('Reset ALL data? This cannot be undone.')) return;
+  if (!confirm('Are you sure? All streaks and logs will be lost!')) return;
+  localStorage.removeItem('dsa_streak');
+  location.reload();
+}
+
+// ─── NAVIGATION ──────────────────────────────────────
+function showPage(id) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('page-' + id).classList.add('active');
+  document.querySelectorAll('.nav-btn').forEach(b => {
+    if (b.textContent.toLowerCase().includes(id === 'home' ? 'home' : id)) b.classList.add('active');
+  });
+  if (id === 'home') renderHome();
+  if (id === 'log') renderLog();
+  if (id === 'projects') renderProjects();
+  if (id === 'settings') renderSettings();
+}
+
+// ─── TOAST ───────────────────────────────────────────
+let toastTimer;
+function showToast(msg, type = 'info') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast ' + type + ' show';
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+// ─── INIT ─────────────────────────────────────────────
+checkDailyNotifs();
+renderHome();
+</script>
+</body>
+</html>
